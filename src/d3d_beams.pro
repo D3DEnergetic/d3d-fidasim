@@ -24,11 +24,11 @@ FUNCTION d3d_beams,inputs
 	v_co[0]=238.76 & v_co[1]=v_co[0]
 	nsources=n_elements(vs_NB)
 
-	xyz_src=[[double(us_NB)],[double(vs_NB)],[replicate(0.0d,nsources)]]
+	uvw_src=[[double(us_NB)],[double(vs_NB)],[replicate(0.0d,nsources)]]
         ;; Location of the crossover in machine coordinates
-	xyz_pos=[[double(u_co)],[double(v_co)],[replicate(0.0d,nsources)]]
+	uvw_pos=[[double(u_co)],[double(v_co)],[replicate(0.0d,nsources)]]
 
-        axis = xyz_pos - xyz_src
+        axis = uvw_pos - uvw_src
 ;	focy=replicate(1d33,nsources)      ; horizontal focal length
 ;	(infinity)
         focy=replicate(999999.9d0,nsources) ; so f90 can read input 
@@ -60,7 +60,8 @@ FUNCTION d3d_beams,inputs
     cur_axis = reform(axis[inputs.isource,*])
     axis = cur_axis/sqrt(total(cur_axis^2.0))
 	nbi={circular:0,einj:einj,pinj:pinj,full:ffracs,half:hfracs,third:tfracs,$
-		 src:reform(xyz_src[inputs.isource,*]),uvw_pos:reform(xyz_pos[inputs.isource,*]),axis:axis,widy:bmwidra,widz:bmwidza,$
-		 divy:divy[*,inputs.isource],divz:divz[*,inputs.isource],focy:focy[inputs.isource],focz:focz[inputs.isource]}
+             uvw_src:reform(uvw_src[inputs.isource,*]),uvw_pos:reform(uvw_pos[inputs.isource,*]),bmwidra:bmwidra,bmwidza:bmwidza,$
+             divy:divy[*,inputs.isource],divz:divz[*,inputs.isource],focy:focy[inputs.isource],focz:focz[inputs.isource],$
+             src:reform(uvw_src[inputs.isource,*]),axis:axis,widy:bmwidra,widz:bmwidza}
 	return,nbi
 END
