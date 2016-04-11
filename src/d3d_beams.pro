@@ -23,12 +23,15 @@ FUNCTION d3d_beams,inputs
 	u_co[0]=132.334 & u_co[1]=u_co[0]
 	v_co[0]=238.76 & v_co[1]=v_co[0]
 	nsources=n_elements(vs_NB)
-	xyz_src=[[double(us_NB)],[double(vs_NB)],[replicate(0.0d,nsources)]]
-	xyz_pos=[[double(u_co)],[double(v_co)],[replicate(0.0d,nsources)]]
 
+	uvw_src=[[double(us_NB)],[double(vs_NB)],[replicate(0.0d,nsources)]]
+        ;; Location of the crossover in machine coordinates
+	uvw_pos=[[double(u_co)],[double(v_co)],[replicate(0.0d,nsources)]]
+
+        axis = uvw_pos - uvw_src
 ;	focy=replicate(1d33,nsources)      ; horizontal focal length
 ;	(infinity)
-    focy=replicate(999999.9d0,nsources) ; so f90 can read input 
+        focy=replicate(999999.9d0,nsources) ; so f90 can read input 
 	focz=replicate(1000d0,nsources)      ; vertical focal length is 10 m
 	divy=replicate(8.73d-3,3,nsources)    ; horizontal divergence in radians
 	divz=replicate(2.27d-2,3,nsources)
@@ -36,7 +39,6 @@ FUNCTION d3d_beams,inputs
 	bmwidra=6d0     ; ion source half width in cm
 	bmwidza=24d0    ; ion source half height in cm
  
-
 	;------------------------------------------
 	;;Get beam energy,power and fractions
 
@@ -54,10 +56,12 @@ FUNCTION d3d_beams,inputs
     hfracs=cgfith[0]+cgfith[1]*einj+cgfith[2]*einj^2
     tfracs=1.0-ffracs-hfracs
 	
-
-	;;SAVE IN NBI STRUCTURE
+    ;;SAVE IN NBI STRUCTURE
+    cur_axis = reform(axis[inputs.isource,*])
+    axis = cur_axis/sqrt(total(cur_axis^2.0))
 	nbi={circular:0,einj:einj,pinj:pinj,full:ffracs,half:hfracs,third:tfracs,$
-		 uvw_src:reform(xyz_src[inputs.isource,*]),uvw_pos:reform(xyz_pos[inputs.isource,*]),bmwidra:bmwidra,bmwidza:bmwidza,$
-		 divy:divy[*,inputs.isource],divz:divz[*,inputs.isource],focy:focy[inputs.isource],focz:focz[inputs.isource]}
+             uvw_src:reform(uvw_src[inputs.isource,*]),uvw_pos:reform(uvw_pos[inputs.isource,*]),bmwidra:bmwidra,bmwidza:bmwidza,$
+             divy:divy[*,inputs.isource],divz:divz[*,inputs.isource],focy:focy[inputs.isource],focz:focz[inputs.isource],$
+             src:reform(uvw_src[inputs.isource,*]),axis:axis,widy:bmwidra,widz:bmwidza}
 	return,nbi
 END
