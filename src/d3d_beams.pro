@@ -1,6 +1,10 @@
-FUNCTION d3d_beams,inputs
+FUNCTION d3d_beams,bname
 ; Returns the nbi structure
 
+    bnames = ['30lt','30rt','150lt','150rt','210lt','210rt','330lt','330rt']
+    isource = where(strmatch(bnames,bname,/fold_case) eq 1,nw)
+    if nw eq 0 then error, 'Unknown beam: '+bname,/halt
+    
 	;; Here are the TRANSP numbers
 	;; This places the aperture as actually located, and the source is
 	;; then "xedge" cm further away from the vessel.
@@ -38,30 +42,15 @@ FUNCTION d3d_beams,inputs
 
 	bmwidra=6d0     ; ion source half width in cm
 	bmwidza=24d0    ; ion source half height in cm
- 
-	;------------------------------------------
-	;;Get beam energy,power and fractions
-
-	if inputs.einj eq 0. or inputs.pinj eq 0. then $
-		a=get_beam_power(inputs.shot,inputs.time*1000.,inputs.isource)
-	if inputs.einj eq 0. then einj=a.einj else einj=inputs.einj
-	if inputs.pinj eq 0. then pinj=a.pinj else pinj=inputs.pinj
-	einj=double(einj) & pinj=double(pinj)
-
-    ;;GET SPECIES_MIX
-    cgfitf=[-0.109171,0.0144685,-7.83224e-5]
-    cgfith=[0.0841037,0.00255160,-7.42683e-8]
-    ;; Current fractions
-    ffracs=cgfitf[0]+cgfitf[1]*einj+cgfitf[2]*einj^2
-    hfracs=cgfith[0]+cgfith[1]*einj+cgfith[2]*einj^2
-    tfracs=1.0-ffracs-hfracs
+    ;a=get_beam_power(inputs.shot,inputs.time*1000.,inputs.isource)
 	
     ;;SAVE IN NBI STRUCTURE
-    cur_axis = reform(axis[inputs.isource,*])
+    cur_axis = reform(axis[isource,*])
     axis = cur_axis/sqrt(total(cur_axis^2.0))
-	nbi={circular:0,einj:einj,pinj:pinj,full:ffracs,half:hfracs,third:tfracs,$
-             uvw_src:reform(uvw_src[inputs.isource,*]),uvw_pos:reform(uvw_pos[inputs.isource,*]),bmwidra:bmwidra,bmwidza:bmwidza,$
-             divy:divy[*,inputs.isource],divz:divz[*,inputs.isource],focy:focy[inputs.isource],focz:focz[inputs.isource],$
-             src:reform(uvw_src[inputs.isource,*]),axis:axis,widy:bmwidra,widz:bmwidza}
-	return,nbi
+
+    nbi={shape:1,data_source:source_file(),name:bname,$
+         divy:divy[*,isource],divz:divz[*,isource],focy:focy[isource],focz:focz[isource],$
+         src:reform(uvw_src[isource,*]),axis:axis,widy:bmwidra,widz:bmwidza}
+
+    return,nbi
 END

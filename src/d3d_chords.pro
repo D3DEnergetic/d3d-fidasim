@@ -48,52 +48,57 @@ FUNCTION get_mainion_geom,shot,beam
         '210rt': mchords = ['m09','m10','m11','m12','m13','m14','m15','m16']
         '30lt' : mchords = ['m01','m02','m03','m04','m05','m06','m07','m08']
         '330lt' : mchords = ['m17','m18','m19','m20']
-        ELSE: return, {err:1}
-    ENDCASE
+        ELSE: error,'No Main-ion chords for beam '+beam,/halt
+    eNDCASE
 
-    ulens = []
-    vlens = []
-    wlens = []
-    ulos = []
-    vlos = []
-    wlos = []
-    for i=0,n_elements(mchords)-1 do begin
+    nchan = long(n_elements(mchords))
+    radius = dblarr(nchan)
+    axis = dblarr(3,nchan)
+    lens = dblarr(3,nchan)
+    pos = dblarr(3,nchan)
+
+    for i=0L,nchan-1 do begin
         bst_chord_param,shot,mchords[i],beam
-        ulens = [ulens,chord_param.geometry.lens[0]]
-        vlens = [vlens,chord_param.geometry.lens[1]]
-        wlens = [wlens,chord_param.geometry.lens[2]]
-        ulos = [ulos,chord_param.geometry.location[0]]
-        vlos = [vlos,chord_param.geometry.location[1]]
-        wlos = [wlos,chord_param.geometry.location[2]]
+        lens[*,i] = chord_param.geometry.lens
+        pos[*,i] = chord_param.geometry.location
+        axis[*,i] = pos[*,i] - lens[*,i]
+        radius[i] = sqrt(total(pos[0]^2 + pos[1]^2))
+        axis[*,i] = axis[*,i]/sqrt(total(axis[*,i]^2))
     endfor
+    sigma_pi = replicate(1.d0,nchan)
+    spot_size = replicate(0.d0,nchan)
 
-    return, {chords:mchords,ulens:ulens,vlens:vlens,wlens:wlens,$
-             ulos:ulos,vlos:vlos,wlos:wlos,$
-             ra:ulos*0,rd:ulos*0,h:ulos*0}
+    return, {data_source:source_file(),system:'MAIN_ION:'+beam,nchan:nchan,$
+             lens:lens,axis:axis,sigma_pi:sigma_pi,spot_size:spot_size,radius:radius}
+
 END
 
 FUNCTION get_oblique_geom,shot
 
     chrds = oblique_spatial(shot)
     str_names=tag_names(chrds)
-    umid=[]
-    vmid=[]
-    chords=[]
-    for i=0,n_tags(chrds)-1 do begin
-        if str_names[i] eq 'CALDATE' then continue
-        umid=[umid,chrds.(i).fibers.x]
-        vmid=[vmid,chrds.(i).fibers.y]
-        chords=[chords,replicate(str_names[i],3)]
-    endfor
-    wmid=umid*0
+    w = where(strmatch(str_names,'p*',/fold_case) eq 1,nw)
+    nchan = long(3*nw)
+    lens = dblarr(3,nchan)
+    axis = dblarr(3,nchan)
+    pos = dblarr(3,nchan)
+    radius = dblarr(nchan)
 
-    ulens=replicate(-46.02,n_elements(umid))
-    vlens=replicate(-198.5,n_elements(umid))
-    wlens=replicate(122.0,n_elements(umid))
+    for i=0L,nw-1 do begin
+        inds = 3*i + [0,1,2]
+        for j=0L,2 do begin
+            lens[*,inds[j]] = [-46.02d0,-198.5d0,122.d0]
+            pos[*,inds[j]] = [chrds.(w[i]).fibers.x[j],chrds.(w[i]).fibers.y[j],0.d0]
+            radius[inds[j]] = sqrt(total(pos[0,inds[j]]^2 + pos[1,inds[j]]^2)) 
+            axis[*,inds[j]] = pos[*,inds[j]] - lens[*,inds[j]]
+            axis[*,inds[j]] = axis[*,inds[j]]/sqrt(total(axis[*,inds[j]]^2))
+        endfor
+    endfor
+    sigma_pi = replicate(1.d0,nchan)
+    spot_size = replicate(0.d0,nchan)
     
-    return, {chords:chords,ulens:ulens,vlens:vlens,$
-             wlens:wlens,ulos:umid,vlos:vmid,wlos:wmid,$
-             ra:umid*0,rd:umid*0,h:umid*0}
+    return, {data_source:source_file(),system:'OBLIQUE',nchan:nchan,$
+             lens:lens,axis:axis,sigma_pi:sigma_pi,spot_size:spot_size,radius:radius}
 
 END
 
@@ -104,34 +109,48 @@ FUNCTION get_cer_geom,shot,isource,system=system
     a=GET_CERGEOM(shot)
     b=GET_CER_BEAM_ORDER(shot)
     beams=['30LT','30RT','150LT','150RT','210LT','210RT','330LT','330RT']
-    nchan=n_elements(a.labels)
-
-    ulens = [] & ulos=ulens
-    vlens = [] & vlos=vlens
-    wlens = [] & wlos=wlens
-    chords = []
 
     whb=where(b eq beams[isource])
-    for i=0,nchan-1 do begin
-        rl=a.rcers[i]*100.
-        phil=a.phicers[i]
-        rb=a.rcere[i,whb]*100.
-        phib=a.phicere[i,whb]
+    wphi = where(a.phicere[*,whb] le 360.0,nw)
 
-        if phib le 360.0 then begin
-            wlens = [wlens, a.zcers[i]*100.]
-            ulens = [ulens, a.rcers[i]*COS((90. - a.phicers[i])*!DTOR)*100.]
-            vlens = [vlens, a.rcers[i]*SIN((90. - a.phicers[i])*!DTOR)*100.]
-            wlos = [wlos, a.zcere[i,whb]*100.]
-            ulos = [ulos, a.rcere[i,whb]*COS((90 - a.phicere[i,whb])*!DTOR)*100.]
-            vlos = [vlos, a.rcere[i,whb]*SIN((90 - a.phicere[i,whb])*!DTOR)*100.]
-            chords = [chords, a.labels[i]]
-        endif
+    nchan = long(nw)
+    lens = dblarr(3,nchan)
+    pos = dblarr(3,nchan)
+    axis = dblarr(3,nchan)
+    radius = dblarr(nchan)
+    chords = strarr(nchan)
+    for i=0,nchan-1 do begin
+        rl=a.rcers[wphi[i]]*100.
+        zl=a.zcers[wphi[i]]*100.
+        phil=a.phicers[wphi[i]]
+
+        rb=a.rcere[wphi[i],whb]*100.
+        zb=a.zcere[wphi[i],whb]*100.
+        phib=a.phicere[wphi[i],whb]
+
+        lens[0,i] = rl*cos((90.0 - phil)*!DTOR)
+        lens[1,i] = rl*sin((90.0 - phil)*!DTOR)
+        lens[2,i] = zl
+
+        pos[0,i] = rb*cos((90.0 - phib)*!DTOR)
+        pos[1,i] = rb*sin((90.0 - phib)*!DTOR)
+        pos[2,i] = zb
+        radius[i] = rb
+
+        axis[*,i] = pos[*,i] - lens[*,i]
+        axis[*,i] = axis[*,i]/sqrt(total(axis[*,i]^2))
+        chords[i] = a.labels[wphi[i]]
     endfor
+    sigma_pi = replicate(1.d0,nchan)
+    spot_size = replicate(0.d0,nchan)
 
     CASE strlowcase(system) of
-        'vertical': tmp=execute("w=where(strmid(chords,0,1) eq 'V',nw)")
-        'tangential': tmp=execute("w=where(strmid(chords,0,1) eq 'T',nw)")
+        'vertical': BEGIN
+            w=where(strmid(chords,0,1) eq 'V',nw)
+        END
+        'tangential': BEGIN
+            w=where(strmid(chords,0,1) eq 'T',nw)
+        END
         'edge_tangential': BEGIN
         ;; Edge tangentials from 345R0
             edge_chords = ['TANG8','TANG23','TANG9','TANG24',$
@@ -142,11 +161,16 @@ FUNCTION get_cer_geom,shot,isource,system=system
                 w = [w,WHERE(STRCMP(edge_chords[i],chords))]
             ENDFOR
         END
-        else: tmp=execute("w=where(strmid(chords,0,1) ne 'V',nw)")
+        else: BEGIN
+            warn, 'Unknown CER system: '+system+'. Using VERTICAL'
+            w=where(strmid(chords,0,1) ne 'V',nw)
+        END
     ENDCASE
 
-    output={chords:chords[w], ulens:ulens[w], vlens:vlens[w], wlens:wlens[w], $
-            ulos:ulos[w], vlos:vlos[w], wlos:wlos[w], ra:ulos[w]*0, rd:ulos[w]*0, h:ulos[w]*0}
+    output={data_source:source_file(),system:system,chords:chords[w], $
+            nchan:long(nw), lens:lens[*,w],axis:axis[*,w],$
+            radius:radius[w],sigma_pi:sigma_pi[w],spot_size:spot_size[w]}
+
     return,output
 END
 
@@ -154,142 +178,41 @@ FUNCTION d3d_chords,shot,fida_diag,isource=isource
 
     if n_elements(isource) eq 0 then isource=6
     fida_diag=strupcase(fida_diag)
-    ;; fida structure (15 == number of chords/channels)
-    ;;** Structure <88d87f8>, 9 tags, length=800, data length=792, refs=1:
-    ;;   SIGMA_PI_RATIO  DOUBLE          0.90000000 ;;COULD BE ARRAY
-    ;;   NCHAN           LONG                15
-    ;;   ULOS            DOUBLE    Array[15]
-    ;;   VLOS            DOUBLE    Array[15]
-    ;;   WLOS            DOUBLE    Array[15]
-    ;;   ULENS           DOUBLE    Array[15]
-    ;;   VLENS           DOUBLE    Array[15]
-    ;;   WLENS           DOUBLE    Array[15]
-    ;;   RA              FLOAT     Array[15]
-    ;;   RD              FLOAT     Array[15]
-    ;;   H               FLOAT     Array[15]
+
+    nchan = 0
+    system = []
+    axis = []
+    lens = []
+    radius = []
+    sigma_pi = []
+    spot_size = []
 
     ;; SELECT THE VIEWS
     for i=0,n_elements(fida_diag)-1 do begin
         CASE (fida_diag[i]) OF
             'VERTICAL': begin
-                cer_chords = get_cer_geom(shot,isource,system='vertical')
-                ulos = cer_chords.ulos
-                vlos = cer_chords.vlos
-                wlos = cer_chords.wlos
-                uhead = cer_chords.ulens
-                vhead = cer_chords.vlens
-                whead = cer_chords.wlens
-                nchan = n_elements(ulos)
-                sigma_pi = replicate(1.d0,nchan)
-                ra = replicate(0.d0,nchan)
-                rd = replicate(0.d0,nchan)
-                h = replicate(0.d0,nchan)
-                chan_id = replicate(0.d0,nchan)
+                c = get_cer_geom(shot,isource,system='vertical')
             end
             'OBLIQUE': begin
-                oblique_chords=get_oblique_geom()
-                ulos = oblique_chords.ulos
-                vlos = oblique_chords.vlos
-                wlos = oblique_chords.wlos
-                uhead = oblique_chords.ulens
-                vhead = oblique_chords.vlens
-                whead = oblique_chords.wlens
-                nchan = n_elements(ulos)
-                sigma_pi = replicate(1.d0,nchan)
-                ra = replicate(0.d0,nchan)
-                rd = replicate(0.d0,nchan)
-                h = replicate(0.d0,nchan)
-                chan_id = replicate(0.d0,nchan)
+                c=get_oblique_geom()
             end
             'TANGENTIAL': begin
-                cer_chords = get_cer_geom(shot,isource,system='tangential')
-                ulos = cer_chords.ulos
-                vlos = cer_chords.vlos
-                wlos = cer_chords.wlos
-                uhead = cer_chords.ulens
-                vhead = cer_chords.vlens
-                whead = cer_chords.wlens
-                nchan = n_elements(ulos)
-                sigma_pi = replicate(1.d0,nchan)
-                ra = replicate(0.d0,nchan)
-                rd = replicate(0.d0,nchan)
-                h = replicate(0.d0,nchan)
-                chan_id = replicate(0.d0,nchan)
+                c = get_cer_geom(shot,isource,system='tangential')
             end
             'ET330': begin
-                cer_chords = get_cer_geom(shot,isource,system='edge_tangential')
-                ulos = cer_chords.ulos
-                vlos = cer_chords.vlos
-                wlos = cer_chords.wlos
-                uhead = cer_chords.ulens
-                vhead = cer_chords.vlens
-                whead = cer_chords.wlens
-                nchan = n_elements(ulos)
-                sigma_pi = replicate(1.d0,nchan)
-                ra = replicate(0.d0,nchan)
-                rd = replicate(0.d0,nchan)
-                h = replicate(0.d0,nchan)
-                chan_id = replicate(0.d0,nchan)
+                c = get_cer_geom(shot,isource,system='edge_tangential')
             end
             'MAIN_ION30': begin
-                main_chords = get_mainion_geom(shot,'30lt')
-                ulos = main_chords.ulos
-                vlos = main_chords.vlos
-                wlos = main_chords.wlos
-                uhead = main_chords.ulens
-                vhead = main_chords.vlens
-                whead = main_chords.wlens
-                nchan = n_elements(ulos)
-                sigma_pi = replicate(1.d0,nchan)
-                ra = replicate(0.d0,nchan)
-                rd = replicate(0.d0,nchan)
-                h = replicate(0.d0,nchan)
-                chan_id = replicate(0.d0,nchan)
+                c = get_mainion_geom(shot,'30lt')
             end
             'MAIN_ION210': begin
-                main_chords = get_mainion_geom(shot,'210rt')
-                ulos = main_chords.ulos
-                vlos = main_chords.vlos
-                wlos = main_chords.wlos
-                uhead = main_chords.ulens
-                vhead = main_chords.vlens
-                whead = main_chords.wlens
-                nchan = n_elements(ulos)
-                sigma_pi = replicate(1.d0,nchan)
-                ra = replicate(0.d0,nchan)
-                rd = replicate(0.d0,nchan)
-                h = replicate(0.d0,nchan)
-                chan_id = replicate(0.d0,nchan)
+                c = get_mainion_geom(shot,'210rt')
             end
             'MAIN_ION330': begin
-                main_chords = get_mainion_geom(shot,'330lt')
-                ulos = main_chords.ulos
-                vlos = main_chords.vlos
-                wlos = main_chords.wlos
-                uhead = main_chords.ulens
-                vhead = main_chords.vlens
-                whead = main_chords.wlens
-                nchan = n_elements(ulos)
-                sigma_pi = replicate(1.d0,nchan)
-                ra = replicate(0.d0,nchan)
-                rd = replicate(0.d0,nchan)
-                h = replicate(0.d0,nchan)
-                chan_id = replicate(0.d0,nchan)
+                c = get_mainion_geom(shot,'330lt')
             end
             'NPA': begin
-                npa_chords = get_npa_geom()
-                ulos = npa_chords.ulos
-                vlos = npa_chords.vlos
-                wlos = npa_chords.wlos
-                uhead = npa_chords.uhead
-                vhead = npa_chords.vhead
-                whead = npa_chords.whead
-                ra = npa_chords.ra
-                rd = npa_chords.rd
-                h = npa_chords.h
-                nchan = n_elements(ulos)
-                sigma_pi = replicate(1.d0,nchan)
-                chan_id = replicate(1.d0,nchan)
+                c = get_npa_geom()
             end
             'BES_ARRAY': begin
                 ulos = [133.617,  133.490,  133.350,  133.222,  133.094, $
@@ -316,10 +239,6 @@ FUNCTION d3d_chords,shot,fida_diag,isource=isource
 
                 nchan = n_elements(ulos)
                 sigma_pi = replicate(1.d0,nchan)
-                ra = replicate(0.d0,nchan)
-                rd = replicate(0.d0,nchan)
-                h = replicate(0.d0,nchan)
-                chan_id = replicate(0.d0,nchan)
             end
             '2D_CAMERA': begin
                 ;;FROM fida_vanzeeland DIII-D 2-D camera at 90 degrees
@@ -331,33 +250,28 @@ FUNCTION d3d_chords,shot,fida_diag,isource=isource
                 wlos = [0.]
                 nchan = n_elements(ulos)
                 sigma_pi = replicate(1.d0,nchan)
-                ra = replicate(0.d0,nchan)
-                rd = replicate(0.d0,nchan)
-                h = replicate(0.d0,nchan)
-                chan_id = replicate(0.d0,nchan)
             end
             ELSE: begin
                 PRINT, '% Diagnostic unknown'
                 STOP
             end
         ENDCASE
+        system = [system, c.system]
+        nchan = nchan + c.nchan
+        axis = [[axis],[c.axis]]
+        lens = [[lens],[c.lens]]
+        radius = [radius,c.radius]
+        sigma_pi = [sigma_pi,c.sigma_pi]
+        spot_size = [spot_size,c.spot_size]
 
-        if i eq 0 then begin
-            uloss=ulos & vloss=vlos & wloss=wlos
-            uheads=uhead & vheads=vhead & wheads=whead
-            nchans=nchan & sigma_pis=sigma_pi & ras=ra & rds=rd
-            hs=h & chan_ids=chan_id
-        endif else begin
-            uloss=[uloss,ulos] & vloss=[vloss,vlos] & wloss=[wloss,wlos]
-            uheads=[uheads,uhead] & vheads=[vheads,vhead] & wheads=[wheads,whead]
-            nchans+=nchan & sigma_pis=[sigma_pis,sigma_pi] & ras=[ras,ra] & rds=[rds,rd]
-            hs=[hs,h] & chan_ids=[chan_ids,chan_id]
-        endelse
     endfor
 
-    ;;SAVE IN FIDA STRUCTURE
-    fida={nchan:nchans,diag:fida_diag,ulos:double(uloss),vlos:double(vloss),wlos:double(wloss),$
-          ulens:double(uheads),vlens:double(vheads),wlens:double(wheads),$
-          sigma_pi_ratio:sigma_pis,ra:ras,rd:rds,h:hs,chan_id:chan_ids}
+    if nchan eq 0 then begin
+        error,'No valid FIDA/BES systems selected',/halt
+    endif
+
+    return, {system:strjoin(system,","),data_source:source_file(), $
+             nchan:nchan,axis:axis,lens:lens,$
+             radius:radius,sigma_pi:sigma_pi,spot_size:spot_size}
     return,fida
 END
