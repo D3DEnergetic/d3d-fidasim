@@ -68,7 +68,7 @@ FUNCTION get_mainion_geom,shot,beam
     sigma_pi = replicate(1.d0,nchan)
     spot_size = replicate(0.d0,nchan)
 
-    return, {data_source:source_file(),system:'MAIN_ION:'+beam,nchan:nchan,$
+    return, {data_source:source_file(),system:'MAIN_ION:'+beam,nchan:nchan,id:mchords, $
              lens:lens,axis:axis,sigma_pi:sigma_pi,spot_size:spot_size,radius:radius}
 
 END
@@ -83,9 +83,11 @@ FUNCTION get_oblique_geom,shot
     axis = dblarr(3,nchan)
     pos = dblarr(3,nchan)
     radius = dblarr(nchan)
+    id = strarr(nchan)
 
     for i=0L,nw-1 do begin
         inds = 3*i + [0,1,2]
+        id[inds] = str_names[w[i]]+'_'+['1','2','3']
         for j=0L,2 do begin
             lens[*,inds[j]] = [-46.02d0,-198.5d0,122.d0]
             pos[*,inds[j]] = [chrds.(w[i]).fibers.x[j],chrds.(w[i]).fibers.y[j],0.d0]
@@ -97,7 +99,7 @@ FUNCTION get_oblique_geom,shot
     sigma_pi = replicate(1.d0,nchan)
     spot_size = replicate(0.d0,nchan)
     
-    return, {data_source:source_file(),system:'OBLIQUE',nchan:nchan,$
+    return, {data_source:source_file(),system:'OBLIQUE',nchan:nchan,id:id,$
              lens:lens,axis:axis,sigma_pi:sigma_pi,spot_size:spot_size,radius:radius}
 
 END
@@ -167,7 +169,7 @@ FUNCTION get_cer_geom,shot,isource,system=system
         END
     ENDCASE
 
-    output={data_source:source_file(),system:system,chords:chords[w], $
+    output={data_source:source_file(),system:system,id:chords[w], $
             nchan:long(nw), lens:lens[*,w],axis:axis[*,w],$
             radius:radius[w],sigma_pi:sigma_pi[w],spot_size:spot_size[w]}
 
@@ -181,6 +183,7 @@ FUNCTION d3d_chords,shot,fida_diag,isource=isource
 
     nchan = 0
     system = []
+    id = []
     axis = []
     lens = []
     radius = []
@@ -258,6 +261,7 @@ FUNCTION d3d_chords,shot,fida_diag,isource=isource
         ENDCASE
         system = [system, c.system]
         nchan = nchan + c.nchan
+        id = [id, c.id]
         axis = [[axis],[c.axis]]
         lens = [[lens],[c.lens]]
         radius = [radius,c.radius]
@@ -270,8 +274,8 @@ FUNCTION d3d_chords,shot,fida_diag,isource=isource
         error,'No valid FIDA/BES systems selected',/halt
     endif
 
-    return, {system:strjoin(system,","),data_source:source_file(), $
-             nchan:nchan,axis:axis,lens:lens,$
+    return, {system:strjoin(system,", ",/single),data_source:source_file(), $
+             nchan:nchan,axis:axis,lens:lens,id:id,$
              radius:radius,sigma_pi:sigma_pi,spot_size:spot_size}
     return,fida
 END

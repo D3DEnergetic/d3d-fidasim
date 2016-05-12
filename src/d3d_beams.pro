@@ -32,13 +32,13 @@ FUNCTION d3d_beams,bname
         ;; Location of the crossover in machine coordinates
 	uvw_pos=[[double(u_co)],[double(v_co)],[replicate(0.0d,nsources)]]
 
-        axis = uvw_pos - uvw_src
+    axis = uvw_pos - uvw_src
 ;	focy=replicate(1d33,nsources)      ; horizontal focal length
 ;	(infinity)
-        focy=replicate(999999.9d0,nsources) ; so f90 can read input 
-	focz=replicate(1000d0,nsources)      ; vertical focal length is 10 m
-	divy=replicate(8.73d-3,3,nsources)    ; horizontal divergence in radians
-	divz=replicate(2.27d-2,3,nsources)
+    focy=999999.9d0 ; so f90 can read input 
+	focz=1000d0     ; vertical focal length is 10 m
+	divy=replicate(8.73d-3,3)    ; horizontal divergence in radians
+	divz=replicate(2.27d-2,3)
 
 	bmwidra=6d0     ; ion source half width in cm
 	bmwidza=24d0    ; ion source half height in cm
@@ -46,11 +46,11 @@ FUNCTION d3d_beams,bname
 	
     ;;SAVE IN NBI STRUCTURE
     cur_axis = reform(axis[isource,*])
-    axis = cur_axis/sqrt(total(cur_axis^2.0))
+    cur_axis = cur_axis/sqrt(total(cur_axis^2.0))
 
     nbi={shape:1,data_source:source_file(),name:bname,$
-         divy:divy[*,isource],divz:divz[*,isource],focy:focy[isource],focz:focz[isource],$
-         src:reform(uvw_src[isource,*]),axis:axis,widy:bmwidra,widz:bmwidza}
+         divy:divy,divz:divz,focy:focy,focz:focz,$
+         src:reform(uvw_src[isource,*]),axis:cur_axis,widy:bmwidra,widz:bmwidza}
 
     return,nbi
 END
