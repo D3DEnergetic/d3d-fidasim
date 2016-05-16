@@ -87,7 +87,7 @@ FUNCTION get_oblique_geom,shot
 
     for i=0L,nw-1 do begin
         inds = 3*i + [0,1,2]
-        id[inds] = str_names[w[i]]+'_'+['1','2','3']
+        id[inds] = str_names[w[i]]+'_'+['a','b','c']
         for j=0L,2 do begin
             lens[*,inds[j]] = [-46.02d0,-198.5d0,122.d0]
             pos[*,inds[j]] = [chrds.(w[i]).fibers.x[j],chrds.(w[i]).fibers.y[j],0.d0]
