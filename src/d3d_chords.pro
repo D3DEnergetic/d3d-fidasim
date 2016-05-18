@@ -1,45 +1,3 @@
-FUNCTION get_npa_geom
-    ;;Rev. Sci. Instrum. 83, 10D304 (2012) <-NPA Geometry
-    detuvw = fltarr(3,3)
-    detuvw[0,*] = [2.52,.08,.81]
-    detuvw[1,*] = [2.5,.05,.86]
-    detuvw[2,*] = [2.49,.09,.89]
-    npap = detuvw*0.
-    for i=0,2 do begin
-        npap[i,0] = -(detuvw[i,0] + detuvw[i,1])/sqrt(2.)
-        npap[i,1] = (detuvw[i,1] - detuvw[i,0])/sqrt(2.)
-        npap[i,2] = -detuvw[i,2]
-    endfor
-    npap *= 100
-
-    iwall = fltarr(3,3)
-    iwall[0,*] = [0.95,1.15,32.4]
-    iwall[1,*] = [0.95,0.70,4.19]
-    iwall[2,*] = [0.95,0.49,-10.96]
-    npa_mid = iwall*0.
-    for i=0,2 do begin
-        npa_mid[i,0] = iwall[i,0]*cos(!pi*(225+iwall[i,2])/180)
-        npa_mid[i,1] = iwall[i,0]*sin(!pi*(225+iwall[i,2])/180)
-        npa_mid[i,2] = iwall[i,1]
-    endfor
-    npa_mid *= 100
-    ulos = npa_mid[*,0]
-    vlos = npa_mid[*,1]
-    wlos = npa_mid[*,2]
-    uhead = npap[*,0]
-    vhead = npap[*,1]
-    whead = npap[*,2]
-    nchan = n_elements(ulos)
-    ra = replicate(0.5d0,nchan)
-    rd = replicate(0.5d0,nchan)
-    h = replicate(25.4d0,nchan)
-
-    return, {uhead:uhead, vhead:vhead, whead:whead,$
-             ulos:ulos, vlos:vlos, wlos:wlos,$
-             ra:ra, rd:rd, h:h}
-
-END
-
 FUNCTION get_mainion_geom,shot,beam
 
     common bst_chord_param,chord_param
@@ -213,9 +171,6 @@ FUNCTION d3d_chords,shot,fida_diag,isource=isource
             end
             'MAIN_ION330': begin
                 c = get_mainion_geom(shot,'330lt')
-            end
-            'NPA': begin
-                c = get_npa_geom()
             end
             'BES_ARRAY': begin
                 ulos = [133.617,  133.490,  133.350,  133.222,  133.094, $
