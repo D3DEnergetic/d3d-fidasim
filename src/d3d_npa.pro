@@ -31,14 +31,17 @@ FUNCTION d3d_npa
     d_redge = dblarr(3,3)
     d_tedge = dblarr(3,3)
     
-    for i=0, 2 do begin
-        basis = line_basis(npap[i,*],npa_mid[i,*])
-        d_cent[*,i] = basis##[0.0, 0.0, 0.0] + npap[i,*]
-        d_redge[*,i] = basis##[0.0, 0.5, 0.0] + npap[i,*] 
-        d_tedge[*,i] = basis##[0.0, 0.0, 0.5] + npap[i,*] 
-        a_cent[*,i] = basis##[-25.4, 0.0, 0.0] + npap[i,*]
-        a_redge[*,i] = basis##[-25.4, 0.5, 0.0] + npap[i,*] 
-        a_tedge[*,i] = basis##[-25.4, 0.0, 0.5] + npap[i,*]
+    for i=0,2 do begin
+        r0 = reform(npap[i,*])
+        v0 = reform(npa_mid[i,*]) - r0
+        v0 = v0/sqrt(total(v0*v0))
+        basis = line_basis(r0,v0)
+        a_cent[*,i] = basis##[0.0, 0.0, 0.0] + r0
+        a_redge[*,i] = basis##[0.0, 0.5, 0.0] + r0
+        a_tedge[*,i] = basis##[0.0, 0.0, 0.5] + r0
+        d_cent[*,i] = basis##[-25.4, 0.0, 0.0] + r0
+        d_redge[*,i] = basis##[-25.4, 0.5, 0.0] + r0
+        d_tedge[*,i] = basis##[-25.4, 0.0, 0.5] + r0
     endfor
     nchan = 3L
     system = 'ssNPA'

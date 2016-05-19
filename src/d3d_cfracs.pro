@@ -8,5 +8,5 @@ FUNCTION d3d_cfracs,einj
     hfracs=cgfith[0]+cgfith[1]*einj+cgfith[2]*einj^2
     tfracs=1.0-ffracs-hfracs
 
-    return, [ffracs,hfracs,tfracs]
+    return, double([ffracs,hfracs,tfracs])
 END
