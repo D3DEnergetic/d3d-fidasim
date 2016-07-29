@@ -48,9 +48,20 @@ FUNCTION d3d_beams,bname
     cur_axis = reform(axis[isource,*])
     cur_axis = cur_axis/sqrt(total(cur_axis^2.0))
 
+    ;;Apertures
+    naperture = 1
+    ashape = [1]
+    adist = [186.1d0]
+    awidy = [8.85d0]
+    awidz = [24.d0]
+    aoffy = [0.d0]
+    aoffz = [0.d0]
+
     nbi={shape:1,data_source:source_file(),name:bname,$
          divy:divy,divz:divz,focy:focy,focz:focz,$
-         src:reform(uvw_src[isource,*]),axis:cur_axis,widy:bmwidra,widz:bmwidza}
+         src:reform(uvw_src[isource,*]),axis:cur_axis,widy:bmwidra,widz:bmwidza,$
+         naperture:naperture,ashape:ashape,adist:adist,awidy:awidy,awidz:awidz, $
+         aoffy:aoffy,aoffz:aoffz}
 
     return,nbi
 END
