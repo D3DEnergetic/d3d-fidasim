@@ -134,11 +134,10 @@ FUNCTION get_cer_geom,shot,isource,system=system
     return,output
 END
 
-FUNCTION d3d_chords,shot,fida_diag,isource=isource
+FUNCTION d3d_chords,fida_diag,calib=calib,isource=isource,shot=shot
 
-    if n_elements(isource) eq 0 then isource=6
     fida_diag=strupcase(fida_diag)
-
+    dir = file_dirname(source_file())
     nchan = 0
     system = []
     id = []
@@ -155,7 +154,11 @@ FUNCTION d3d_chords,shot,fida_diag,isource=isource
                 c = get_cer_geom(shot,isource,system='vertical')
             end
             'OBLIQUE': begin
-                c=get_oblique_geom()
+                if strlowcase(calib) eq 'forward2012' then begin
+                    c=get_oblique_geom(shot)
+                endif else begin
+                    c=read_hdf5(dir+'/geometry/d3d_chords.h5',paths='/oblique/forward2015',/sh,/flat)
+                endelse
             end
             'TANGENTIAL': begin
                 c = get_cer_geom(shot,isource,system='tangential')
