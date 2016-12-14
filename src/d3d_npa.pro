@@ -30,7 +30,7 @@ FUNCTION d3d_npa
     d_cent = dblarr(3,3)
     d_redge = dblarr(3,3)
     d_tedge = dblarr(3,3)
-    
+    radius = dblarr(3)    
     for i=0,2 do begin
         r0 = reform(npap[i,*])
         v0 = reform(npa_mid[i,*]) - r0
@@ -42,11 +42,14 @@ FUNCTION d3d_npa
         d_cent[*,i] = basis##[-25.4, 0.0, 0.0] + r0
         d_redge[*,i] = basis##[-25.4, 0.5, 0.0] + r0
         d_tedge[*,i] = basis##[-25.4, 0.0, 0.5] + r0
+
+        t = -r0[2]/v0[2]
+        ri = r0 + t*v0
+        radius[i] = sqrt(ri[0]^2 + ri[1]^2)
     endfor
     nchan = 3L
     system = 'ssNPA'
     id = ['npa1','npa2','npa3']
-    radius = iwall[*,0]*100.d0
     a_shape = replicate(2,nchan)
     d_shape = replicate(2,nchan)
     return, {nchan:nchan,system:system,data_source:source_file(),$
