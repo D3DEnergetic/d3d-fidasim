@@ -158,6 +158,7 @@ FUNCTION d3d_chords,fida_diag,calib=calib,isource=isource,shot=shot
                     c=get_oblique_geom(shot)
                 endif else begin
                     c=read_hdf5(dir+'/geometry/d3d_chords.h5',paths='/oblique/forward2015',/sh,/flat)
+                    c = c.forward2015
                 endelse
             end
             'TANGENTIAL': begin
