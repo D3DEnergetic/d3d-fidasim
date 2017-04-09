@@ -20,7 +20,7 @@ FUNCTION get_mainion_geom,shot,beam
         lens[*,i] = chord_param.geometry.lens
         pos[*,i] = chord_param.geometry.location
         axis[*,i] = pos[*,i] - lens[*,i]
-        radius[i] = sqrt(total(pos[0]^2 + pos[1]^2))
+        radius[i] = sqrt(total(pos[0,i]^2 + pos[1,i]^2))
         axis[*,i] = axis[*,i]/sqrt(total(axis[*,i]^2))
     endfor
     sigma_pi = replicate(1.d0,nchan)
