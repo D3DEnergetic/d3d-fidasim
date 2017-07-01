@@ -28,9 +28,9 @@ PRO d3d_prefida, inputs, igrid=igrid,bgrid=bgrid
 
     w = where("spec_diag" eq strlowcase(TAG_NAMES(inputs)), nw)
     if nw ne 0 then begin
-        c = TAG_NAMES(inputs.spec_diag)
+        c = inputs.spec_diag
         for i=0,n_elements(c)-1 do begin
-            spec = d3d_chords(c[i], calib=inputs.spec_diag.(i),shot=inputs.shot)
+            spec = d3d_chords(c[i], shot=inputs.shot)
             inputs.calc_fida = 1
             inputs.calc_bes = 1
             inputs.calc_brems = 1
@@ -39,21 +39,21 @@ PRO d3d_prefida, inputs, igrid=igrid,bgrid=bgrid
 
     w = where("npa_diag" eq strlowcase(TAG_NAMES(inputs)),nw)
     if nw ne 0 then begin
-        if n_tags(inputs.npa_diag) ne 0 then begin
+        if n_elements(inputs.npa_diag) ne 0 then begin
             npa = d3d_npa() 
             inputs.calc_npa_wght = 1
         endif
     endif
        
-    fields = read_geqdsk(inputs.geqdsk_file,igrid,flux=flux,g=g)
+    fields = read_geqdsk(inputs.geqdsk_file,igrid,flux=flux,g=g,btipsign=btipsign)
     plasma = extract_transp_plasma(inputs.transp_file,inputs.time,igrid,flux,profiles=prof)
 
     case strlowcase(inputs.dist_type) of
-        'nubeam': dist = read_nubeam(inputs.dist_file,igrid,btipsign=inputs.btipsign,$
+        'nubeam': dist = read_nubeam(inputs.dist_file,igrid,btipsign=btipsign,$
                   e_range=inputs.e_range, p_range=inputs.p_range) 
-        'mc_nubeam': dist=read_mc_nubeam(inputs.dist_file,btipsign=inputs.btipsign,$
+        'mc_nubeam': dist=read_mc_nubeam(inputs.dist_file,btipsign=btipsign,$
                      ntotal=inputs.ntotal,e_range=inputs.e_range,p_range=inputs.p_range) 
-        'spiral': dist = read_spiral(inputs.dist_file,btipsign=inputs.btipsign,ntotal=inputs.ntotal)
+        'spiral': dist = read_spiral(inputs.dist_file,btipsign=btipsign,ntotal=inputs.ntotal)
     endcase
 
     prefida,inputs,igrid,nbi,plasma,fields,dist,spec=spec,npa=npa

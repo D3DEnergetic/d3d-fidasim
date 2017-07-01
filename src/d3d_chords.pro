@@ -31,34 +31,57 @@ FUNCTION get_mainion_geom,shot,beam
 
 END
 
-FUNCTION get_oblique_geom,shot
+FUNCTION oblique_geo_from_patch, patchfile, skip=skip
 
-    chrds = oblique_spatial(shot)
-    str_names=tag_names(chrds)
-    w = where(strmatch(str_names,'p*',/fold_case) eq 1,nw)
-    nchan = long(3*nw)
-    lens = dblarr(3,nchan)
-    axis = dblarr(3,nchan)
-    pos = dblarr(3,nchan)
-    radius = dblarr(nchan)
-    id = strarr(nchan)
+    suffix = ['a','b','c']
 
-    for i=0L,nw-1 do begin
-        inds = 3*i + [0,1,2]
-        id[inds] = str_names[w[i]]+'_'+['a','b','c']
-        for j=0L,2 do begin
-            lens[*,inds[j]] = [-46.02d0,-198.5d0,122.d0]
-            pos[*,inds[j]] = [chrds.(w[i]).fibers.x[j],chrds.(w[i]).fibers.y[j],0.d0]
-            radius[inds[j]] = sqrt(total(pos[0,inds[j]]^2 + pos[1,inds[j]]^2)) 
-            axis[*,inds[j]] = pos[*,inds[j]] - lens[*,inds[j]]
-            axis[*,inds[j]] = axis[*,inds[j]]/sqrt(total(axis[*,inds[j]]^2))
+    restore, patchfile
+    pnames = TAG_NAMES(patchdat)
+    nchan = 0
+    lens = []
+    axis = []
+    radius = []
+    id = []
+    sigma_pi = []
+    spot_size = []
+    for i = 0,n_elements(pnames)-1 do begin
+        if keyword_set(skip) then begin
+            tmp = where(strlowcase(pnames[i]) eq skip,nw)
+            if nw gt 0 then continue
+        endif
+        if patchdat.(i).x eq '' then continue
+        f = patchdat.(i).fibers
+        for j=0,n_elements(f.fibers)-1 do begin
+            fnum = f.fibers[j]
+            nchan = nchan + 1
+            lens = [[lens],[-46.02d0,-198.5d0,122.d0]]
+            pos = double([f.x[j], f.y[j], 0.d0])
+            a = pos - [-46.02d0,-198.5d0,122.d0]
+            a = double(a/sqrt(total(a*a)))
+            axis = [[axis],[a]]
+            radius = [ radius, double(f.r[j])]
+            id = [id, 'p'+string(ceil(float(fnum)/3),FOR='(I02)')+suffix[fnum mod 3 -1]]
+            spot_size = [spot_size,2.d0]
+            sigma_pi = [sigma_pi,1.d0]
         endfor
     endfor
-    sigma_pi = replicate(1.d0,nchan)
-    spot_size = replicate(0.d0,nchan)
-    
-    return, {data_source:source_file(),system:'OBLIQUE',nchan:nchan,id:id,$
-             lens:lens,axis:axis,sigma_pi:sigma_pi,spot_size:spot_size,radius:radius}
+    sid = sort(id)
+    chords = {system:'OBLIQUE',nchan:long(nchan),data_source:patchfile,lens:lens[*,sid],axis:axis[*,sid], $
+              id:id[sid], sigma_pi:sigma_pi[sid],radius:radius[sid],spot_size:spot_size[sid]}
+
+    return, chords
+
+END
+
+FUNCTION get_oblique_geom,shot
+
+    fidadir = '/fusion/projects/diagnostics/fida'
+    tmp = read_ascii(fidadir+'/calib/patch/patch.txt',comment_symbol=';')
+    patches = long(tmp.field1)
+    patch_num = patches[2,(where(patches[0,*] le shot))[-1]]
+    patch_file = file_search(fidadir+'/calib/patch/.','patch'+strcompress(patch_num,/remove_all)+'.dat',/fold)
+    print, 'Getting Oblique geometry from patch '+string(patch_num,for='(I02)')
+    return, oblique_geo_from_patch(patch_file)
 
 END
 
@@ -99,7 +122,12 @@ FUNCTION get_cer_geom,shot,isource,system=system
 
         axis[*,i] = pos[*,i] - lens[*,i]
         axis[*,i] = axis[*,i]/sqrt(total(axis[*,i]^2))
-        chords[i] = a.labels[wphi[i]]
+        id = a.labels[wphi[i]]
+        CASE strmid(id,0,1) OF
+            'T': chords[i] = strjoin(strsplit(id,'ANG',/extract))
+            'V': chords[i] = strjoin(strsplit(id,'ERT',/extract))
+            ELSE: chords[i] = id
+        ENDCASE
     endfor
     sigma_pi = replicate(1.d0,nchan)
     spot_size = replicate(0.d0,nchan)
@@ -113,9 +141,9 @@ FUNCTION get_cer_geom,shot,isource,system=system
         END
         'edge_tangential': BEGIN
         ;; Edge tangentials from 345R0
-            edge_chords = ['TANG8','TANG23','TANG9','TANG24',$
-                           'TANG10','TANG11','TANG12','TANG13',$
-                           'TANG14','TANG15','TANG16']
+            edge_chords = ['T8','T23','T9','T24',$
+                           'T10','T11','T12','T13',$
+                           'T14','T15','T16']
             w=[]
             FOR i=0,N_ELEMENTS(edge_chords)-1 DO BEGIN
                 w = [w,WHERE(STRCMP(edge_chords[i],chords))]
@@ -123,7 +151,7 @@ FUNCTION get_cer_geom,shot,isource,system=system
         END
         else: BEGIN
             warn, 'Unknown CER system: '+system+'. Using VERTICAL'
-            w=where(strmid(chords,0,1) ne 'V',nw)
+            w=where(strmid(chords,0,1) eq 'V',nw)
         END
     ENDCASE
 
@@ -151,18 +179,22 @@ FUNCTION d3d_chords,fida_diag,calib=calib,isource=isource,shot=shot
     for i=0,n_elements(fida_diag)-1 do begin
         CASE (fida_diag[i]) OF
             'VERTICAL': begin
-                c = get_cer_geom(shot,isource,system='vertical')
+                c = get_cer_geom(shot,6,system='vertical')
             end
             'OBLIQUE': begin
-                if strlowcase(calib) eq 'forward2012' then begin
-                    c=get_oblique_geom(shot)
-                endif else begin
-                    c=read_hdf5(dir+'/geometry/d3d_chords.h5',paths='/oblique/forward2015',/sh,/flat)
-                    c = c.forward2015
-                endelse
+                c = get_oblique_geom(shot)
             end
             'TANGENTIAL': begin
                 c = get_cer_geom(shot,isource,system='tangential')
+            end
+            'TANGENTIAL30': begin
+                c = get_cer_geom(shot,0,system='tangential')
+            end
+            'TANGENTIAL210': begin
+                c = get_cer_geom(shot,5,system='tangential')
+            end
+            'TANGENTIAL330': begin
+                c = get_cer_geom(shot,6,system='tangential')
             end
             'ET330': begin
                 c = get_cer_geom(shot,isource,system='edge_tangential')
