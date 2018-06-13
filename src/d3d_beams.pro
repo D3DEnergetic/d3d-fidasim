@@ -1,67 +1,75 @@
 FUNCTION d3d_beams,bname
 ; Returns the nbi structure
 
-    bnames = ['30lt','30rt','150lt','150rt','210lt','210rt','330lt','330rt']
-    isource = where(strmatch(bnames,bname,/fold_case) eq 1,nw)
-    if nw eq 0 then error, 'Unknown beam: '+bname,/halt
-    
-	;; Here are the TRANSP numbers
-	;; This places the aperture as actually located, and the source is
-	;; then "xedge" cm further away from the vessel.
-	;;     30LT     30RT 150LT 150RT 210LT     210RT     330LT 330RT
-	us_NB=[430.24933, 393.89442, $
-	       180.16372, 235.25667, $
-	       -235.25671, -180.16376, $
-	       -180.16373, -235.25668]
-	vs_NB=[456.44009, 499.06619,$
-	       -600.82700, -590.65572,$
-	       -590.65570, -600.82699,$
-	       600.82700, 590.65572]
+    nb_30lt = {NAME:'30LT', NBSHAP:1, $
+               FOCLZ:1000.d0, FOCLR:1.0d33, $
+               DIVZ:2.27d-2, DIVR:8.73d-3, $
+               BMWIDZ:24.d0,BMWIDR:6.d0 , $
+               RTCENA:114.6d0,XLBAPA:[186.1d0],$
+               XLBTNA:802.8d0,XBZETA:44.2889d0,$
+               XYBAPA:0.d0,XYBSCA:0.d0 , NLCO:1,$
+               NBAPSHA:[1], RAPEDGA:[8.85d0], XZPEDGA:[24.0d0],$
+               XRAPOFFA:[0.d0], XZAPOFFA:[0.d0] }
 
+    nb_30rt = {NAME:'30RT', NBSHAP:1, $
+               FOCLZ:1000.d0, FOCLR:1.0d33, $
+               DIVZ:2.27d-2, DIVR:8.73d-3, $
+               BMWIDZ:24.d0,BMWIDR:6.d0 , $
+               RTCENA:76.2d0,XLBAPA:[186.1d0],$
+               XLBTNA:817.3d0,XBZETA:50.1602d0,$
+               XYBAPA:0.d0,XYBSCA:0.d0 , NLCO:1,$
+               NBAPSHA:[1], RAPEDGA:[8.85d0], XZPEDGA:[24.0d0],$
+               XRAPOFFA:[0.d0], XZAPOFFA:[0.d0] }
 
-	; Cross-over points [30,30,150,150,210,210,330,330] measured by CER group
-	u_co=[129.2599,129.2599, 142.2877, 142.2877, -141.09, -141.09,-139.4861,-139.4861]
-	v_co=[239.3489,239.3489,-232.1300,-232.1300, -230.40, -230.40, 233.7739, 233.7739]
+    nb_21lt = {NAME:'210LT', NBSHAP:1, $
+               FOCLZ:1000.d0, FOCLR:1.0d33, $
+               DIVZ:2.27d-2, DIVR:8.73d-3, $
+               BMWIDZ:24.d0,BMWIDR:6.d0 , $
+               RTCENA:76.2d0,XLBAPA:[186.1d0],$
+               XLBTNA:817.3d0,XBZETA:249.84d0,$
+               XYBAPA:0.d0,XYBSCA:0.d0 , NLCO:-1,$
+               NBAPSHA:[1], RAPEDGA:[8.85d0], XZPEDGA:[24.0d0],$
+               XRAPOFFA:[0.d0], XZAPOFFA:[0.d0] }
 
-	;; 30LT is closer to the beamers' description, not original CER Grierson.
-	u_co[0]=132.334 & u_co[1]=u_co[0]
-	v_co[0]=238.76 & v_co[1]=v_co[0]
-	nsources=n_elements(vs_NB)
+    nb_21rt = {NAME:'210RT', NBSHAP:1, $
+               FOCLZ:1000.d0, FOCLR:1.0d33, $
+               DIVZ:2.27d-2, DIVR:8.73d-3, $
+               BMWIDZ:24.d0,BMWIDR:6.d0 , $
+               RTCENA:114.6d0,XLBAPA:[186.1d0],$
+               XLBTNA:802.8d0,XBZETA:255.711d0,$
+               XYBAPA:0.d0,XYBSCA:0.d0 , NLCO:-1,$
+               NBAPSHA:[1], RAPEDGA:[8.85d0], XZPEDGA:[24.0d0],$
+               XRAPOFFA:[0.d0], XZAPOFFA:[0.d0] }
 
-	uvw_src=[[double(us_NB)],[double(vs_NB)],[replicate(0.0d,nsources)]]
-        ;; Location of the crossover in machine coordinates
-	uvw_pos=[[double(u_co)],[double(v_co)],[replicate(0.0d,nsources)]]
+    nb_33lt = {NAME:'330LT', NBSHAP:1, $
+               FOCLZ:1000.d0, FOCLR:1.0d33, $
+               DIVZ:2.27d-2, DIVR:8.73d-3, $
+               BMWIDZ:24.d0,BMWIDR:6.d0 , $
+               RTCENA:114.6d0,XLBAPA:[186.1d0],$
+               XLBTNA:802.8d0,XBZETA:104.289d0,$
+               XYBAPA:0.d0,XYBSCA:0.d0 , NLCO:1,$
+               NBAPSHA:[1], RAPEDGA:[8.85d0], XZPEDGA:[24.0d0],$
+               XRAPOFFA:[0.d0], XZAPOFFA:[0.d0] }
 
-    axis = uvw_pos - uvw_src
-;	focy=replicate(1d33,nsources)      ; horizontal focal length
-;	(infinity)
-    focy=999999.9d0 ; so f90 can read input 
-	focz=1000d0     ; vertical focal length is 10 m
-	divy=replicate(8.73d-3,3)    ; horizontal divergence in radians
-	divz=replicate(2.27d-2,3)
+    nb_33rt = {NAME:'330RT', NBSHAP:1, $
+               FOCLZ:1000.d0, FOCLR:1.0d33, $
+               DIVZ:2.27d-2, DIVR:8.73d-3, $
+               BMWIDZ:24.d0,BMWIDR:6.d0 , $
+               RTCENA:76.2d0,XLBAPA:[186.1d0],$
+               XLBTNA:874.3d0,XBZETA:110.16d0,$
+               XYBAPA:0.d0,XYBSCA:0.d0, NLCO:1,$
+               NBAPSHA:[1], RAPEDGA:[8.85d0], XZPEDGA:[24.0d0],$
+               XRAPOFFA:[0.d0], XZAPOFFA:[0.d0] }
 
-	bmwidra=6d0     ; ion source half width in cm
-	bmwidza=24d0    ; ion source half height in cm
-    ;a=get_beam_power(inputs.shot,inputs.time*1000.,inputs.isource)
-	
-    ;;SAVE IN NBI STRUCTURE
-    cur_axis = reform(axis[isource,*])
-    cur_axis = cur_axis/sqrt(total(cur_axis^2.0))
-
-    ;;Apertures
-    naperture = 1
-    ashape = [1]
-    adist = [186.1d0]
-    awidy = [8.85d0]
-    awidz = [24.d0]
-    aoffy = [0.d0]
-    aoffz = [0.d0]
-
-    nbi={shape:1,data_source:source_file(),name:bname,$
-         divy:divy,divz:divz,focy:focy,focz:focz,$
-         src:reform(uvw_src[isource,*]),axis:cur_axis,widy:bmwidra,widz:bmwidza,$
-         naperture:naperture,ashape:ashape,adist:adist,awidy:awidy,awidz:awidz, $
-         aoffy:aoffy,aoffz:aoffz}
+    CASE strlowcase(bname) OF
+        '30lt': nbi = nubeam_geometry(nb_30lt)
+        '30rt': nbi = nubeam_geometry(nb_30rt)
+        '210lt': nbi = nubeam_geometry(nb_21lt)
+        '210rt': nbi = nubeam_geometry(nb_21rt)
+        '330lt': nbi = nubeam_geometry(nb_33lt)
+        '330rt': nbi = nubeam_geometry(nb_33rt)
+        ELSE: error,'No geometry for beam '+beam,/halt
+    ENDCASE
 
     return,nbi
 END
