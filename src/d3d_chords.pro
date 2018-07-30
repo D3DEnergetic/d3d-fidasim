@@ -53,6 +53,8 @@ FUNCTION oblique_geo_from_patch, patchfile, skip=skip
         f = patchdat.(i).fibers
         for j=0,n_elements(f.fibers)-1 do begin
             fnum = f.fibers[j]
+            name = 'p'+string(ceil(float(fnum)/3),FOR='(I02)')+suffix[fnum mod 3 -1]
+            IF N_ELEMENTS(id) && TOTAL(STRCMP(name,id)) THEN CONTINUE
             nchan = nchan + 1
             lens = [[lens],[-46.02d0,-198.5d0,122.d0]]
             pos = double([f.x[j], f.y[j], 0.d0])
@@ -60,7 +62,7 @@ FUNCTION oblique_geo_from_patch, patchfile, skip=skip
             a = double(a/sqrt(total(a*a)))
             axis = [[axis],[a]]
             radius = [ radius, double(f.r[j])]
-            id = [id, 'p'+string(ceil(float(fnum)/3),FOR='(I02)')+suffix[fnum mod 3 -1]]
+            id = [id, name]
             spot_size = [spot_size,2.d0]
             sigma_pi = [sigma_pi,1.d0]
         endfor
