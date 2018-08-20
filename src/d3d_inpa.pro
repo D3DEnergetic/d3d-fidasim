@@ -1,5 +1,5 @@
 
-FUNCTION inpa_geometry
+FUNCTION d3d_inpa
 
   ;; lower phosphor
   lphor = [ $
