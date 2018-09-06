@@ -1,5 +1,5 @@
 
-FUNCTION inpa_geometry
+FUNCTION d3d_inpa
 
   ;; lower phosphor
   lphor = [ $
@@ -92,7 +92,7 @@ FUNCTION inpa_geometry
 
   inpa={nchan:nchan, $
         system:'INPA', $
-        data_source:'inpa_geometry', $
+        data_source:source_file(), $
         id:STRTRIM(INDGEN(7)+1,2), $
         radius:radius/10., $
         a_shape:INTARR(7)+2, $
