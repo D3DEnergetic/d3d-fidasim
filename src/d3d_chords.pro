@@ -164,7 +164,7 @@ FUNCTION get_cer_geom,shot,isource,system=system
     return,output
 END
 
-FUNCTION d3d_chords,fida_diag,calib=calib,isource=isource,shot=shot
+FUNCTION d3d_chords,fida_diag,calib=calib,isource=isource,shot=shot,use_oblique_patch=use_oblique_patch
 
     fida_diag=strupcase(fida_diag)
     dir = file_dirname(source_file())
@@ -184,7 +184,12 @@ FUNCTION d3d_chords,fida_diag,calib=calib,isource=isource,shot=shot
                 c = get_cer_geom(shot,6,system='vertical')
             end
             'OBLIQUE': begin
-                c = get_oblique_geom(shot)
+                if keyword_set(use_oblique_patch) then begin
+                    c = get_oblique_geom(shot)
+                endif else begin
+                    c_str = read_hdf5(dir+'/claudio_geometry.h5',paths='/spec',/sh)
+                    c = c_str.spec
+                endelse
             end
             'TANGENTIAL': begin
                 c = get_cer_geom(shot,isource,system='tangential')
