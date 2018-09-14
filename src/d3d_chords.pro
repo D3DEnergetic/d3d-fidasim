@@ -187,8 +187,7 @@ FUNCTION d3d_chords,fida_diag,calib=calib,isource=isource,shot=shot,use_oblique_
                 if keyword_set(use_oblique_patch) then begin
                     c = get_oblique_geom(shot)
                 endif else begin
-                    c_str = read_hdf5(dir+'/claudio_geometry.h5',paths='/spec',/sh)
-                    c = c_str.spec
+                    c = claudio_chords()
                 endelse
             end
             'TANGENTIAL': begin
