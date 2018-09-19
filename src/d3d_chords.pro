@@ -164,7 +164,7 @@ FUNCTION get_cer_geom,shot,isource,system=system
     return,output
 END
 
-FUNCTION d3d_chords,fida_diag,calib=calib,isource=isource,shot=shot,use_oblique_patch=use_oblique_patch
+FUNCTION d3d_chords,fida_diag,calib=calib,isource=isource,shot=shot,use_claudio_oblique=use_claudio_oblique
 
     fida_diag=strupcase(fida_diag)
     dir = file_dirname(source_file())
@@ -184,10 +184,10 @@ FUNCTION d3d_chords,fida_diag,calib=calib,isource=isource,shot=shot,use_oblique_
                 c = get_cer_geom(shot,6,system='vertical')
             end
             'OBLIQUE': begin
-                if keyword_set(use_oblique_patch) then begin
-                    c = get_oblique_geom(shot)
-                endif else begin
+                if keyword_set(use_claudio_oblique) then begin
                     c = claudio_chords()
+                endif else begin
+                    c = get_oblique_geom(shot)
                 endelse
             end
             'TANGENTIAL': begin
