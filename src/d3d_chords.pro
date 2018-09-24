@@ -185,7 +185,7 @@ FUNCTION d3d_chords,fida_diag,calib=calib,isource=isource,shot=shot,use_claudio_
             end
             'OBLIQUE': begin
                 if keyword_set(use_claudio_oblique) then begin
-                    c = claudio_chords()
+                    c = claudio_geometry()
                 endif else begin
                     c = get_oblique_geom(shot)
                 endelse
