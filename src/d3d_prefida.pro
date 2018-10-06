@@ -7,11 +7,13 @@ PRO d3d_prefida, inputs, igrid=igrid,bgrid=bgrid
                    ab:2.01410178d0,ai:2.0141078d0,impurity_charge:6,$
                    lambdamin:647.0d0,lambdamax:667.0d0,nlambda:2000,$
                    n_fida:5000000L,n_npa:500000L,n_nbi:50000L, $
+                   n_pfida:50000000L,n_pnpa:50000000L, $
                    n_halo:500000L,n_dcx:500000L,n_birth:10000L,$
                    ne_wght:50,np_wght:50,nphi_wght:100,emax_wght:100.0d0,$
                    nlambda_wght:1000,lambdamin_wght:647.d0,lambdamax_wght:667.d0,$
-                   calc_npa:0,calc_brems:0,calc_bes:0,calc_fida:0,$
-                   calc_birth:0,calc_fida_wght:0,calc_npa_wght:0,dump_dcx:0,$
+                   calc_npa:2,calc_brems:1,calc_fida:1,calc_neutron:1,$
+                   calc_nbi:1,calc_dcx:1,calc_halo:1,calc_cold:1,$
+                   calc_birth:1,calc_fida_wght:1,calc_npa_wght:1,calc_pfida:1,calc_pnpa:2,$
                    install_dir:fida_dir,tables_file:fida_dir+'/tables/atomic_tables.h5'}
 
     if not keyword_set(igrid) then begin
@@ -32,7 +34,7 @@ PRO d3d_prefida, inputs, igrid=igrid,bgrid=bgrid
         for i=0,n_elements(c)-1 do begin
             spec = d3d_chords(c[i], shot=inputs.shot)
             inputs.calc_fida = 1
-            inputs.calc_bes = 1
+            inputs.calc_nbi = 1
             inputs.calc_brems = 1
         endfor
     endif
@@ -40,19 +42,19 @@ PRO d3d_prefida, inputs, igrid=igrid,bgrid=bgrid
     w = where("npa_diag" eq strlowcase(TAG_NAMES(inputs)),nw)
     if nw ne 0 then begin
         if n_elements(inputs.npa_diag) ne 0 then begin
-            npa = d3d_npa() 
+            npa = d3d_npa()
             inputs.calc_npa_wght = 1
         endif
     endif
-       
+
     fields = read_geqdsk(inputs.geqdsk_file,igrid,flux=flux,g=g,btipsign=btipsign)
     plasma = extract_transp_plasma(inputs.transp_file,inputs.time,igrid,flux,profiles=prof)
 
     case strlowcase(inputs.dist_type) of
         'nubeam': dist = read_nubeam(inputs.dist_file,igrid,btipsign=btipsign,$
-                  e_range=inputs.e_range, p_range=inputs.p_range) 
+                  e_range=inputs.e_range, p_range=inputs.p_range)
         'mc_nubeam': dist=read_mc_nubeam(inputs.dist_file,btipsign=btipsign,$
-                     ntotal=inputs.ntotal,e_range=inputs.e_range,p_range=inputs.p_range) 
+                     ntotal=inputs.ntotal,e_range=inputs.e_range,p_range=inputs.p_range)
         'spiral': dist = read_spiral(inputs.dist_file,btipsign=btipsign,ntotal=inputs.ntotal)
     endcase
 
