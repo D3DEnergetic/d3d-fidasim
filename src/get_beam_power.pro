@@ -23,4 +23,3 @@ einj=1.e-3*n.volts[beam_num]
 return,{pinj:pinj,einj:einj}
 
 end
-		
