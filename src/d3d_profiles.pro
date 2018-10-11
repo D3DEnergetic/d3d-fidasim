@@ -6,7 +6,7 @@ FUNCTION d3d_profiles,inputs,igrid,flux,save=save
     time_str=strmid(time_str,4,/reverse_offset)
     shot_str=strtrim(string(inputs.shot),1)
     profile_str=shot_str+'.'+time_str
-    
+
     dir = inputs.profile_dir
     ;; Look for electron density in this directory
     test = FILE_SEARCH(STRJOIN([dir,'dne*']))
@@ -18,7 +18,7 @@ FUNCTION d3d_profiles,inputs,igrid,flux,save=save
     ti_string=dir+'dti'+profile_str
     imp_string=dir+'dimp'+profile_str+'_Carbon'
     omega_string=dir+'dtrot'+profile_str
-    
+
     ;;CHECK IF FILES EXIST
     file_array=[ne_string,te_string,ti_string,imp_string,omega_string]
     err_array=dblarr(n_elements(file_array))
@@ -37,27 +37,27 @@ FUNCTION d3d_profiles,inputs,igrid,flux,save=save
     	restore,ne_string
     	dene=ne_str.dens*10.0d^(13.0d) ;;cm^-3
     	dene_rho=ne_str.rho_dens
-    
+
     	;;RESTORE ELECTRON TEMPERATURE
     	restore,te_string
     	te=double(te_str.te) ;;keV
     	te_rho=te_str.rho_te
-    
+
     	;;RESTORE ION TEMPERATURE
     	restore,ti_string
     	ti=double(ti_str.ti) ;;keV
     	ti_rho=ti_str.rho_ti
-    
+
     	;;RESTORE ZEFF
     	restore,imp_string
     	zeff=double(impdens_str.zeff)
     	zeff_rho=impdens_str.rho_imp
-    
+
     	;;RESTORE OMEGA
     	restore,omega_string
     	omega=double(tor_rot_str.tor_rot_local) ;rad/s
     	omega_rho=tor_rot_str.rho_tor_rot
-    
+
     	;;INTERPOLATE SO THAT ALL USE THE SAME RHO
     	maxrho=min([dene_rho[-1],te_rho[-1],ti_rho[-1],zeff_rho[-1],omega_rho[-1]])
 
@@ -68,7 +68,8 @@ FUNCTION d3d_profiles,inputs,igrid,flux,save=save
     	vt=igrid.r2d*interpol(omega,omega_rho,flux)
         vr = replicate(0.0d0,igrid.nr,igrid.nz)
         vz = replicate(0.0d0,igrid.nr,igrid.nz)
-        
+        denn = zeff*0 + 1.0d8
+
         s = size(flux,/dim)
         mask = intarr(s[0],s[1])
         w = where(flux le maxrho)
@@ -76,8 +77,8 @@ FUNCTION d3d_profiles,inputs,igrid,flux,save=save
 
 	;;SAVE IN PLASMA STRUCTURE
         plasma={data_source:strjoin(file_array,','), time:inputs.time, $
-                mask:mask,te:te,ti:ti,vr:vr,vt:vt,vz:vz,dene:dene,zeff:zeff}
+                mask:mask,te:te,ti:ti,vr:vr,vt:vt,vz:vz,dene:dene,denn:denn,zeff:zeff}
     endelse
-	
+
     return, plasma
 END

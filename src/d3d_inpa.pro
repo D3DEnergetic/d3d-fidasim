@@ -1,4 +1,3 @@
-
 FUNCTION d3d_inpa
 
   ;; lower phosphor
