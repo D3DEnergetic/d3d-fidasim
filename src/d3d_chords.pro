@@ -31,7 +31,9 @@ FUNCTION get_mainion_geom,shot,beam
 
 END
 
-FUNCTION oblique_geo_from_patch, patchfile, skip=skip
+FUNCTION oblique_geo_from_patch, patchfile, skip=skip, system=system
+
+    IF ~KEYWORD_SET(system) THEN system='oblique'
 
     suffix = ['a','b','c']
 
@@ -44,6 +46,14 @@ FUNCTION oblique_geo_from_patch, patchfile, skip=skip
     id = []
     sigma_pi = []
     spot_size = []
+    CASE STRLOWCASE(system) OF
+       'oblique': origin = [-46.02d0,-198.5d0,122.d0]
+       'tangential': origin = [-245.268d0,48.821d0,-78.258d0]
+        ELSE: BEGIN
+            warn, 'Unknown FIDA system: '+system+'. Using OBLIQUE'
+            origin = [-46.02d0,-198.5d0,122.d0]
+         END
+    ENDCASE
     for i = 0,n_elements(pnames)-1 do begin
         if keyword_set(skip) then begin
             tmp = where(strlowcase(pnames[i]) eq skip,nw)
@@ -56,9 +66,9 @@ FUNCTION oblique_geo_from_patch, patchfile, skip=skip
             name = 'p'+string(ceil(float(fnum)/3),FOR='(I02)')+suffix[fnum mod 3 -1]
             IF N_ELEMENTS(id) && TOTAL(STRCMP(name,id)) THEN CONTINUE
             nchan = nchan + 1
-            lens = [[lens],[-46.02d0,-198.5d0,122.d0]]
+            lens = [[lens],origin]
             pos = double([f.x[j], f.y[j], 0.d0])
-            a = pos - [-46.02d0,-198.5d0,122.d0]
+            a = pos - origin
             a = double(a/sqrt(total(a*a)))
             axis = [[axis],[a]]
             radius = [ radius, double(f.r[j])]
@@ -75,7 +85,7 @@ FUNCTION oblique_geo_from_patch, patchfile, skip=skip
 
 END
 
-FUNCTION get_oblique_geom,shot
+FUNCTION get_oblique_geom,shot,system=system
 
     fidadir = '/fusion/projects/diagnostics/fida'
     tmp = read_ascii(fidadir+'/calib/patch/patch.txt',comment_symbol=';')
@@ -83,7 +93,7 @@ FUNCTION get_oblique_geom,shot
     patch_num = patches[2,(where(patches[0,*] le shot))[-1]]
     patch_file = file_search(fidadir+'/calib/patch/.','patch'+strcompress(patch_num,/remove_all)+'.dat',/fold)
     print, 'Getting Oblique geometry from patch '+string(patch_num,for='(I02)')
-    return, oblique_geo_from_patch(patch_file)
+    return, oblique_geo_from_patch(patch_file,system=system)
 
 END
 
@@ -189,6 +199,9 @@ FUNCTION d3d_chords,fida_diag,calib=calib,isource=isource,shot=shot,use_claudio_
                 endif else begin
                     c = get_oblique_geom(shot)
                 endelse
+            end
+            'FIDA330': begin
+                c = get_oblique_geom(shot,system='tangential')
             end
             'TANGENTIAL': begin
                 c = get_cer_geom(shot,isource,system='tangential')
