@@ -92,7 +92,7 @@ FUNCTION get_fida_geom,shot,system=system
     patches = long(tmp.field1)
     patch_num = patches[2,(where(patches[0,*] le shot))[-1]]
     patch_file = file_search(fidadir+'/calib/patch/.','patch'+strcompress(patch_num,/remove_all)+'.dat',/fold)
-    print, 'Getting Oblique geometry from patch '+string(patch_num,for='(I02)')
+    print, 'Getting FIDA geometry from patch '+string(patch_num,for='(I02)')
     return, fida_geo_from_patch(patch_file,system=system)
 
 END
