@@ -31,7 +31,7 @@ FUNCTION get_mainion_geom,shot,beam
 
 END
 
-FUNCTION oblique_geo_from_patch, patchfile, skip=skip, system=system
+FUNCTION fida_geo_from_patch, patchfile, skip=skip, system=system
 
     IF ~KEYWORD_SET(system) THEN system='oblique'
 
@@ -66,7 +66,7 @@ FUNCTION oblique_geo_from_patch, patchfile, skip=skip, system=system
             name = 'p'+string(ceil(float(fnum)/3),FOR='(I02)')+suffix[fnum mod 3 -1]
             IF N_ELEMENTS(id) && TOTAL(STRCMP(name,id)) THEN CONTINUE
             nchan = nchan + 1
-            lens = [[lens],origin]
+            lens = [[lens],[origin]]
             pos = double([f.x[j], f.y[j], 0.d0])
             a = pos - origin
             a = double(a/sqrt(total(a*a)))
@@ -78,14 +78,14 @@ FUNCTION oblique_geo_from_patch, patchfile, skip=skip, system=system
         endfor
     endfor
     sid = sort(id)
-    chords = {system:'OBLIQUE',nchan:long(nchan),data_source:patchfile,lens:lens[*,sid],axis:axis[*,sid], $
+    chords = {system:STRUPCASE(system),nchan:long(nchan),data_source:patchfile,lens:lens[*,sid],axis:axis[*,sid], $
               id:id[sid], sigma_pi:sigma_pi[sid],radius:radius[sid],spot_size:spot_size[sid]}
 
     return, chords
 
 END
 
-FUNCTION get_oblique_geom,shot,system=system
+FUNCTION get_fida_geom,shot,system=system
 
     fidadir = '/fusion/projects/diagnostics/fida'
     tmp = read_ascii(fidadir+'/calib/patch/patch.txt',comment_symbol=';')
@@ -93,7 +93,7 @@ FUNCTION get_oblique_geom,shot,system=system
     patch_num = patches[2,(where(patches[0,*] le shot))[-1]]
     patch_file = file_search(fidadir+'/calib/patch/.','patch'+strcompress(patch_num,/remove_all)+'.dat',/fold)
     print, 'Getting Oblique geometry from patch '+string(patch_num,for='(I02)')
-    return, oblique_geo_from_patch(patch_file,system=system)
+    return, fida_geo_from_patch(patch_file,system=system)
 
 END
 
@@ -197,11 +197,11 @@ FUNCTION d3d_chords,fida_diag,calib=calib,isource=isource,shot=shot,use_claudio_
                 if keyword_set(use_claudio_oblique) then begin
                     c = claudio_geometry()
                 endif else begin
-                    c = get_oblique_geom(shot)
+                    c = get_fida_geom(shot)
                 endelse
             end
             'FIDA330': begin
-                c = get_oblique_geom(shot,system='tangential')
+                c = get_fida_geom(shot,system='tangential')
             end
             'TANGENTIAL': begin
                 c = get_cer_geom(shot,isource,system='tangential')
